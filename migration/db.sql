@@ -20,6 +20,6 @@ CREATE TABLE IF NOT EXISTS movies (
     link VARCHAR(100),
     title VARCHAR(255) NOT NULL,
     genre VARCHAR(100),
-    release_year INT,
+    release_year INT
 );
 

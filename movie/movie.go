@@ -72,50 +72,9 @@ func HandleMovieTitle(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.B
 		return
 	}
 
-	msgResponse := tgbotapi.NewMessage(chatID, "Kino janrini kiriting:")
-	botInstance.Send(msgResponse)
-}
-
-func HandleMovieGenre(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
-	chatID := msg.Chat.ID
-	genre := msg.Text
-
-	movieID := state.MovieStates[chatID] // Retrieve the movie ID from the state
-	err := storage.AddMovieGenreToDatabase(db, movieID, genre)
-	if err != nil {
-		log.Printf("Error adding movie genre to database: %v", err)
-		msgResponse := tgbotapi.NewMessage(chatID, "Kino janrini qo'shishda xatolik yuz berdi.")
-		botInstance.Send(msgResponse)
-		return
-	}
-
-	msgResponse := tgbotapi.NewMessage(chatID, "Kino chiqarilgan yilini kiriting:")
-	botInstance.Send(msgResponse)
-}
-
-func HandleMovieReleaseYear(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
-	chatID := msg.Chat.ID
-	releaseYear, err := strconv.Atoi(msg.Text)
-	if err != nil {
-		log.Printf("Error parsing release year: %v", err)
-		msgResponse := tgbotapi.NewMessage(chatID, "Noto'g'ri chiqarilgan yil formati.")
-		botInstance.Send(msgResponse)
-		return
-	}
-
-	movieID := state.MovieStates[chatID] // Retrieve the movie ID from the state
-	err = storage.AddMovieReleaseYearToDatabase(db, movieID, releaseYear)
-	if err != nil {
-		log.Printf("Error adding movie release year to database: %v", err)
-		msgResponse := tgbotapi.NewMessage(chatID, "Kino chiqarilgan yilini qo'shishda xatolik yuz berdi.")
-		botInstance.Send(msgResponse)
-		return
-	}
-
 	msgResponse := tgbotapi.NewMessage(chatID, "Kino muvaffaqiyatli qo'shildi.")
 	botInstance.Send(msgResponse)
 }
-
 
 func HandleSearchMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
 	chatID := msg.Chat.ID
@@ -136,7 +95,7 @@ func HandleSearchMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotap
 	}
 
 	video := tgbotapi.NewVideoShare(chatID, movie.Link)
-	caption := fmt.Sprintf("Kino nomi: %s\n\nJanri: %s\n\nBot manzili: @MovieTVuz_Bot \n\nBizning loyihalar: @MRC_GROUPUZ", movie.Title, movie.Genre)
+	caption := fmt.Sprintf("Kino nomi: %s\n\nBot manzili: @MovieTVuz_Bot \n\nBizning loyihalar: @MRC_GROUPUZ", movie.Title)
 	video.Caption = caption
 
 	_, err = botInstance.Send(video)

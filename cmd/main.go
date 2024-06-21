@@ -27,7 +27,7 @@ func main() {
 	}
 	defer db.Close()
 
-	botToken := "6902655696:AAEtKAL78CG86DhjAYb-QVQrTVAGysTpLDA"
+	botToken := "6682301653:AAHYsrQYcgTZy3D6_G6payhXnCodKWHF_1o"
 	botInstance, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		log.Fatal(err)
@@ -101,14 +101,6 @@ func handleMessage(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotA
 			return
 		case "waiting_for_movie_title":
 			movie.HandleMovieTitle(msg, db, botInstance)
-			state.UserStates[chatID] = "waiting_for_movie_genre"
-			return
-		case "waiting_for_movie_genre":
-			movie.HandleMovieGenre(msg, db, botInstance)
-			state.UserStates[chatID] = "waiting_for_movie_release_year"
-			return
-		case "waiting_for_movie_release_year":
-			movie.HandleMovieReleaseYear(msg, db, botInstance)
 			delete(state.UserStates, chatID)
 			return
 		case "waiting_for_search_movie_id":
@@ -163,7 +155,6 @@ func handleStartCommand(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi
 	botInstance.Send(msgReply)
 }
 
-
 func handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, db *sql.DB, botInstance *tgbotapi.BotAPI) {
 	chatID := callbackQuery.Message.Chat.ID
 	messageID := callbackQuery.Message.MessageID
@@ -217,7 +208,6 @@ func handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, db *sql.DB, botI
 		botInstance.Send(msg)
 	}
 }
-
 
 func handleDefaultMessage(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
 	chatID := msg.Chat.ID
