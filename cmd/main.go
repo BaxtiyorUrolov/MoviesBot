@@ -27,7 +27,7 @@ func main() {
 	}
 	defer db.Close()
 
-	botToken := "6682301653:AAHYsrQYcgTZy3D6_G6payhXnCodKWHF_1o"
+	botToken := "6902655696:AAEtKAL78CG86DhjAYb-QVQrTVAGysTpLDA"
 	botInstance, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		log.Fatal(err)
@@ -132,27 +132,40 @@ func handleStartCommand(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi
 		return
 	}
 
-	photoURL := "https://t.me/photolabsuz/15"
-	welcomeMessage := fmt.Sprintf("👋 Assalomu alaykum [%s](tg://user?id=%d) botimizga xush kelibsiz.\n\n✍🏻 Kino kodini yuboring.", firstName, userID)
-
-	// Send the photo
-	photo := tgbotapi.NewPhotoShare(chatID, photoURL)
-	photo.Caption = welcomeMessage
-	photo.ParseMode = "Markdown" // Ensure the message is parsed as Markdown
-	_, err = botInstance.Send(photo)
+	channels, err := storage.GetChannelsFromDatabase(db)
 	if err != nil {
-		log.Printf("Error sending photo: %v", err)
+		log.Printf("Error getting channels from database: %v", err)
 		return
 	}
 
-	// Send inline keyboard
-	startTestButton := tgbotapi.NewInlineKeyboardButtonData("Kino izlash", "kino_izlash")
-	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(startTestButton),
-	)
-	msgReply := tgbotapi.NewMessage(chatID, "")
-	msgReply.ReplyMarkup = inlineKeyboard
-	botInstance.Send(msgReply)
+	if isUserSubscribedToChannels(chatID, channels, botInstance) {
+		photoURL := "https://t.me/photolabsuz/15"
+		welcomeMessage := fmt.Sprintf("👋 Assalomu alaykum [%s](tg://user?id=%d) botimizga xush kelibsiz.\n\n✍🏻 Kino kodini yuboring.", firstName, userID)
+
+		// Send the photo
+		photo := tgbotapi.NewPhotoShare(chatID, photoURL)
+		photo.Caption = welcomeMessage
+		photo.ParseMode = "Markdown" // Ensure the message is parsed as Markdown
+		_, err = botInstance.Send(photo)
+		if err != nil {
+			log.Printf("Error sending photo: %v", err)
+			return
+		}
+
+		// Send inline keyboard
+		startTestButton := tgbotapi.NewInlineKeyboardButtonData("Kino izlash", "kino_izlash")
+		inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(startTestButton),
+		)
+		msgReply := tgbotapi.NewMessage(chatID, "")
+		msgReply.ReplyMarkup = inlineKeyboard
+		botInstance.Send(msgReply)
+	} else {
+		msg := tgbotapi.NewMessage(chatID, "Iltimos, kanallarga azo bo'ling.")
+		inlineKeyboard := createSubscriptionKeyboard(channels)
+		msg.ReplyMarkup = inlineKeyboard
+		botInstance.Send(msg)
+	}
 }
 
 func handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, db *sql.DB, botInstance *tgbotapi.BotAPI) {
@@ -272,7 +285,7 @@ func createSubscriptionKeyboard(channels []string) tgbotapi.InlineKeyboardMarkup
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for _, channel := range channels {
 		channelName := strings.TrimPrefix(channel, "https://t.me/")
-		button := tgbotapi.NewInlineKeyboardButtonURL(channelName, "https://t.me/"+channelName)
+		button := tgbotapi.NewInlineKeyboardButtonURL("Kanalga azo bo'lish", "https://t.me/"+channelName)
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(button))
 	}
 	checkButton := tgbotapi.NewInlineKeyboardButtonData("Azo bo'ldim", "check_subscription")

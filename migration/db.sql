@@ -16,9 +16,9 @@ CREATE TABLE IF NOT EXISTS admins (
 );
 
 CREATE TABLE IF NOT EXISTS movies (
-    id BIGINT,
+    id BIGINT PRIMARY KEY,
     link VARCHAR(100),
-    title VARCHAR(255) NOT NULL,
+    title VARCHAR(255),
     genre VARCHAR(100),
     release_year INT
 );
