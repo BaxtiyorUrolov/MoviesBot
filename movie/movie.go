@@ -95,7 +95,7 @@ func HandleSearchMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotap
 	}
 
 	video := tgbotapi.NewVideoShare(chatID, movie.Link)
-	caption := fmt.Sprintf("Kino nomi: %s\n\nBot manzili: @MovieTVuz_Bot \n\nBizning loyihalar: @MRC_GROUPUZ", movie.Title)
+	caption := fmt.Sprintf("Mana siz izlagan kino.\n\n\n Bot tayyorlatish uchun: @BaxtiyorUrolov")
 	video.Caption = caption
 
 	_, err = botInstance.Send(video)
