@@ -18,11 +18,10 @@ func OpenDatabase(connStr string) (*sql.DB, error) {
 }
 
 func AddUserToDatabase(db *sql.DB, userID int) error {
-	query := `INSERT INTO users (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`
+	query := `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`
 	_, err := db.Exec(query, userID)
 	return err
 }
-
 
 func AddChannelToDatabase(db *sql.DB, channelLink string) error {
 	query := `INSERT INTO channels (name) VALUES ($1)`
@@ -50,7 +49,6 @@ func GetChannelsFromDatabase(db *sql.DB) ([]string, error) {
 	return channels, nil
 }
 
-
 func AddAdminToDatabase(db *sql.DB, adminID int64) error {
 	query := `INSERT INTO admins (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`
 	_, err := db.Exec(query, adminID)
@@ -62,7 +60,6 @@ func RemoveAdminFromDatabase(db *sql.DB, adminID int64) error {
 	_, err := db.Exec(query, adminID)
 	return err
 }
-
 
 func IsAdmin(userID int, db *sql.DB) bool {
 	var id int
@@ -97,7 +94,7 @@ func GetLastMonthUsers(db *sql.DB) (int, error) {
 
 func GetAllUsers(db *sql.DB) ([]models.User, error) {
 	log.Println("GetAllUsers funksiyasi ishga tushdi") // Log qo'shish
-	query := `SELECT user_id, status FROM users`
+	query := `SELECT id, status FROM users`
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err

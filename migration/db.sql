@@ -1,7 +1,6 @@
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY NOT NULL,
-    user_id BIGINT UNIQUE NOT NULL,
+    id BIGINT UNIQUE NOT NULL,
     status INT DEFAULT 1,
     created_at TIMESTAMP DEFAULT NOW()
 );
