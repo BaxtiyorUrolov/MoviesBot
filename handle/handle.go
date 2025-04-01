@@ -1,6 +1,7 @@
 package handle
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -9,7 +10,10 @@ import (
 	"moviesbot/movie"
 	"moviesbot/state"
 	"moviesbot/storage"
+	"os"
+	"os/exec"
 	"strings"
+	"time"
 )
 
 func HandleUpdate(update tgbotapi.Update, db *sql.DB, botInstance *tgbotapi.BotAPI) {
@@ -26,7 +30,7 @@ func handleMessage(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotA
 	chatID := msg.Chat.ID
 	text := msg.Text
 
-	if text == "/start" || text == "Kanal o'chirish" || text == "Admin qo'shish" || text == "Admin o'chirish" || text == "BackUp olish" || text == "Habar yuborish" || text == "Statistika" || text == "Kanal qo'shish" {
+	if text == "/start" || text == "Kanal o'chirish" || text == "Admin qo'shish" || text == "Admin o'chirish" || text == "BackUp olish" || text == "Habar yuborish" || text == "Statistika" || text == "Kanal qo'shish" || text == "Kino yuklash" || text == "Kino o'chirish" {
 		delete(state.UserStates, chatID) // avvalgi state bekor qilinsin
 	}
 
@@ -52,6 +56,10 @@ func handleMessage(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotA
 			movie.HandleMovieID(msg, db, botInstance)
 			state.UserStates[chatID] = "waiting_for_movie_link"
 			return
+		case "waiting_for_movie_remove":
+			movie.HandleDeleteMovie(msg, db, botInstance)
+			delete(state.UserStates, chatID)
+			return
 		case "waiting_for_movie_link":
 			movie.HandleMovieLink(msg, db, botInstance)
 			state.UserStates[chatID] = "waiting_for_movie_title"
@@ -69,7 +77,7 @@ func handleMessage(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotA
 
 	if text == "/start" {
 		handleStartCommand(msg, db, botInstance)
-		storage.AddUserToDatabase(db, int(msg.Chat.ID))
+		storage.AddUserToDatabase(db, msg.Chat.ID)
 	} else if text == "/admin" {
 		admin.HandleAdminCommand(msg, db, botInstance)
 	} else {
@@ -81,13 +89,6 @@ func handleStartCommand(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi
 	chatID := msg.Chat.ID
 	userID := msg.From.ID
 	firstName := msg.From.FirstName
-
-	log.Printf("Adding user to database: %d ", userID)
-	err := storage.AddUserToDatabase(db, userID)
-	if err != nil {
-		log.Printf("Error adding user to database: %v", err)
-		return
-	}
 
 	channels, err := storage.GetChannelsFromDatabase(db)
 	if err != nil {
@@ -196,7 +197,7 @@ func handleDefaultMessage(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbota
 		admin.DisplayChannelsForDeletion(chatID, db, botInstance)
 	case "Statistika":
 		admin.HandleStatistics(msg, db, botInstance)
-	case "Habar yuborish":
+	case "Habar yborish":
 		state.UserStates[chatID] = "waiting_for_broadcast_message"
 		msgResponse := tgbotapi.NewMessage(chatID, "Iltimos, yubormoqchi bo'lgan habaringizni kiriting (Bekor qilish uchun /cancel):")
 		botInstance.Send(msgResponse)
@@ -204,6 +205,14 @@ func handleDefaultMessage(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbota
 		state.UserStates[chatID] = "waiting_for_movie_id"
 		msgResponse := tgbotapi.NewMessage(chatID, "Iltimos, kino ID sini kiriting:")
 		botInstance.Send(msgResponse)
+	case "Kino o'chirish":
+		state.UserStates[chatID] = "waiting_for_movie_remove"
+		msgResponse := tgbotapi.NewMessage(chatID, "Iltimos, kino ID sini kiriting:")
+		botInstance.Send(msgResponse)
+	case "BackUp olish":
+		if storage.IsAdmin(int(chatID), db) {
+			go HandleBackup(db, botInstance)
+		}
 	default:
 		movie.HandleSearchMovieID(msg, db, botInstance)
 	}
@@ -245,4 +254,66 @@ func createSubscriptionKeyboard(channels []string) tgbotapi.InlineKeyboardMarkup
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(checkButton))
 
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
+}
+
+func HandleBackup(db *sql.DB, botInstance *tgbotapi.BotAPI) {
+	// Hozirgi sana
+	currentTime := time.Now().Format("2006-01-02")
+	backupDir := "./backups"
+	backupFile := fmt.Sprintf("%s/backup_%s.sql", backupDir, currentTime)
+
+	// Backup katalogini yaratish
+	if _, err := os.Stat(backupDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(backupDir, os.ModePerm); err != nil {
+			log.Printf("Backup katalogini yaratib bo'lmadi: %v", err)
+			return
+		}
+	}
+
+	// PostgreSQL backupni yaratish
+	cmd := exec.Command("pg_dump", "-U", "godb", "-d", "moviesbot", "-f", backupFile)
+	cmd.Env = append(os.Environ(), "PGPASSWORD=0208") // Parolni muhit o'zgaruvchisi sifatida o'rnatish
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Printf("Backup yaratishda xatolik: %v, %s", err, stderr.String())
+		return
+	}
+
+	log.Printf("Backup muvaffaqiyatli yaratildi: %s", backupFile)
+
+	// Adminlarning IDlarini olish
+	adminIDs, err := storage.GetAdmins(db)
+	if err != nil {
+		log.Printf("Adminlarni olishda xatolik: %v", err)
+		return
+	}
+
+	for _, chatID := range adminIDs {
+		SendBackupToAdmin(chatID, backupFile, botInstance)
+	}
+}
+
+// SendBackupToAdmin sends a backup file to a specific admin
+func SendBackupToAdmin(chatID int64, filePath string, botInstance *tgbotapi.BotAPI) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Printf("Backup faylni ochib bo'lmadi: %v", err)
+		return
+	}
+	defer file.Close()
+
+	msg := tgbotapi.NewDocumentUpload(chatID, tgbotapi.FileReader{
+		Name:   filePath,
+		Reader: file,
+		Size:   -1,
+	})
+
+	if _, err := botInstance.Send(msg); err != nil {
+		log.Printf("Admin (%d) uchun backupni yuborishda xatolik: %v", chatID, err)
+	} else {
+		log.Printf("Admin (%d) uchun backup muvaffaqiyatli yuborildi.", chatID)
+	}
 }

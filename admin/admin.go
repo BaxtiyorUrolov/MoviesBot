@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strconv"
 	"moviesbot/models"
 	"moviesbot/storage"
+	"strconv"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -36,6 +36,10 @@ func HandleAdminCommand(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("Kino yuklash"),
+			tgbotapi.NewKeyboardButton("Kino o'chirish"),
+		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("BackUp olish"),
 		),
 	)
 
@@ -46,10 +50,8 @@ func HandleAdminCommand(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi
 
 func HandleChannelLink(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
 
-
 	chatID := msg.Chat.ID
 	channelLink := msg.Text
-
 
 	if !storage.IsAdmin(int(chatID), db) {
 		msgResponse := tgbotapi.NewMessage(chatID, "Siz admin emassiz.")
@@ -70,7 +72,6 @@ func HandleChannelLink(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.
 }
 
 func DeleteChannel(chatID int64, messageID int, channel string, db *sql.DB, botInstance *tgbotapi.BotAPI) {
-
 
 	if !storage.IsAdmin(int(chatID), db) {
 		return
@@ -99,7 +100,7 @@ func CancelChannelDeletion(chatID int64, messageID int, botInstance *tgbotapi.Bo
 }
 
 func HandleAdminAdd(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
-	
+
 	chatID := msg.Chat.ID
 
 	if !storage.IsAdmin(int(chatID), db) {
@@ -253,7 +254,7 @@ func HandleBroadcastMessage(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbo
 		return
 	}
 
-	go sendBroadcastMessage(users, msg.Text,chatID, botInstance)
+	go sendBroadcastMessage(users, msg.Text, chatID, botInstance)
 	msgResponse := tgbotapi.NewMessage(chatID, fmt.Sprintf("Habar %d foydalanuvchilarga yuborilmoqda...", len(users)))
 	botInstance.Send(msgResponse)
 }

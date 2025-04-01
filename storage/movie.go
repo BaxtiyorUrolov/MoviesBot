@@ -3,25 +3,22 @@ package storage
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"moviesbot/models"
 )
 
-func AddMovieIDToDatabase(db *sql.DB, movieID int64) error {
+func AddMovieIDToDatabase(db *sql.DB, movieID string) error {
 	query := `INSERT INTO movies (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`
 	_, err := db.Exec(query, movieID)
 	return err
 }
 
-func AddMovieLinkToDatabase(db *sql.DB, movieID int64, link string) error {
-	fmt.Println("link uchun id ", movieID)
+func AddMovieLinkToDatabase(db *sql.DB, movieID string, link string) error {
 	query := `UPDATE movies SET link = $2 WHERE id = $1`
 	_, err := db.Exec(query, movieID, link)
 	return err
 }
 
-func AddMovieTitleToDatabase(db *sql.DB, movieID int64, title string) error {
-	fmt.Println("kino id: ", movieID)
+func AddMovieTitleToDatabase(db *sql.DB, movieID string, title string) error {
 
 	query := `UPDATE movies SET title = $2 WHERE id = $1`
 	result, err := db.Exec(query, movieID, title)
@@ -34,7 +31,7 @@ func AddMovieTitleToDatabase(db *sql.DB, movieID int64, title string) error {
 	return nil
 }
 
-func GetMovieByID(db *sql.DB, movieID int64) (*models.Movie, error) {
+func GetMovieByID(db *sql.DB, movieID string) (*models.Movie, error) {
 	query := `SELECT id, link, title FROM movies WHERE id = $1`
 	row := db.QueryRow(query, movieID)
 
@@ -48,4 +45,13 @@ func GetMovieByID(db *sql.DB, movieID int64) (*models.Movie, error) {
 	}
 
 	return &movie, nil
+}
+
+func DeleteMovie(db *sql.DB, movieID string) error {
+	query := `DELETE FROM movies WHERE id = $1`
+	_, err := db.Exec(query, movieID)
+	if err != nil {
+		return err
+	}
+	return nil
 }

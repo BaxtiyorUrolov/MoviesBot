@@ -3,12 +3,10 @@ package movie
 import (
 	"database/sql"
 	"fmt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"moviesbot/state"
 	"moviesbot/storage"
-	"strconv"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 func HandleMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
@@ -18,15 +16,7 @@ func HandleMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotA
 		return
 	}
 
-	movieID, err := strconv.ParseInt(msg.Text, 10, 64)
-	if err != nil {
-		log.Printf("Error parsing movie ID: %v", err)
-		msgResponse := tgbotapi.NewMessage(chatID, "Noto'g'ri kino ID formati.")
-		botInstance.Send(msgResponse)
-		return
-	}
-
-	err = storage.AddMovieIDToDatabase(db, movieID)
+	err := storage.AddMovieIDToDatabase(db, msg.Text)
 	if err != nil {
 		log.Printf("Error adding movie ID to database: %v", err)
 		msgResponse := tgbotapi.NewMessage(chatID, "Kino ID sini qo'shishda xatolik yuz berdi.")
@@ -34,7 +24,7 @@ func HandleMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotA
 		return
 	}
 
-	state.MovieStates[chatID] = movieID // Store the movie ID in the state
+	state.MovieStates[chatID] = msg.Text // Store the movie ID in the state
 
 	msgResponse := tgbotapi.NewMessage(chatID, "Kino linkini kiriting:")
 	botInstance.Send(msgResponse)
@@ -45,7 +35,6 @@ func HandleMovieLink(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.Bo
 	link := msg.Text
 
 	movieID := state.MovieStates[chatID] // Retrieve the movie ID from the state
-	fmt.Println("link uchun id ", movieID)
 	err := storage.AddMovieLinkToDatabase(db, movieID, link)
 	if err != nil {
 		log.Printf("Error adding movie link to database: %v", err)
@@ -63,7 +52,6 @@ func HandleMovieTitle(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.B
 	title := msg.Text
 
 	movieID := state.MovieStates[chatID] // Retrieve the movie ID from the state
-	fmt.Println("kino id: ", movieID)
 	err := storage.AddMovieTitleToDatabase(db, movieID, title)
 	if err != nil {
 		log.Printf("Error adding movie title to database: %v", err)
@@ -78,15 +66,8 @@ func HandleMovieTitle(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.B
 
 func HandleSearchMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
 	chatID := msg.Chat.ID
-	movieID, err := strconv.ParseInt(msg.Text, 10, 64)
-	if err != nil {
-		log.Printf("Error parsing movie ID: %v", err)
-		msgResponse := tgbotapi.NewMessage(chatID, "Noto'g'ri kino ID formati.")
-		botInstance.Send(msgResponse)
-		return
-	}
 
-	movie, err := storage.GetMovieByID(db, movieID)
+	movie, err := storage.GetMovieByID(db, msg.Text)
 	if err != nil {
 		log.Printf("Error retrieving movie: %v", err)
 		msgResponse := tgbotapi.NewMessage(chatID, "Kino topilmadi.")
@@ -105,4 +86,28 @@ func HandleSearchMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotap
 		botInstance.Send(msgResponse)
 		return
 	}
+}
+
+func HandleDeleteMovie(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
+	chatID := msg.Chat.ID
+	movieID := msg.Text
+
+	if !storage.IsAdmin(int(chatID), db) {
+		msgResponse := tgbotapi.NewMessage(chatID, "Siz admin emassiz.")
+		botInstance.Send(msgResponse)
+		return
+	}
+
+	err := storage.DeleteMovie(db, movieID)
+	if err != nil {
+		msgResponse := tgbotapi.NewMessage(chatID, "Kino o'chirishda xatolik yuz berdi.")
+		botInstance.Send(msgResponse)
+		log.Printf("Error deleting movie: %v", err)
+		return
+	}
+
+	msgResponse := tgbotapi.NewMessage(chatID, "Kino muvaffaqiyatli o'chirildi.")
+	botInstance.Send(msgResponse)
+	delete(state.MovieStates, chatID) // Clear the state for this chat
+	return
 }

@@ -17,9 +17,10 @@ func OpenDatabase(connStr string) (*sql.DB, error) {
 	return db, nil
 }
 
-func AddUserToDatabase(db *sql.DB, userID int) error {
+func AddUserToDatabase(db *sql.DB, userID int64) error {
 	query := `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`
 	_, err := db.Exec(query, userID)
+	log.Println(err)
 	return err
 }
 
@@ -111,4 +112,25 @@ func GetAllUsers(db *sql.DB) ([]models.User, error) {
 	}
 
 	return users, nil
+}
+
+func GetAdmins(db *sql.DB) ([]int64, error) {
+	query := `SELECT id FROM admins`
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var adminIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			log.Printf("Error scanning admin ID: %v", err)
+			continue
+		}
+		adminIDs = append(adminIDs, id)
+	}
+
+	return adminIDs, nil
 }
