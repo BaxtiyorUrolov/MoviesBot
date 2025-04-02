@@ -7,6 +7,7 @@ import (
 	"log"
 	"moviesbot/state"
 	"moviesbot/storage"
+	"strings"
 )
 
 func HandleMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
@@ -16,7 +17,33 @@ func HandleMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotA
 		return
 	}
 
-	err := storage.AddMovieIDToDatabase(db, msg.Text)
+	// Instagram URL dan ID ni ajratib olish
+	inputText := msg.Text
+	var movieID string
+
+	// URL da "/reel/" qismini qidirish
+	if strings.Contains(inputText, "/reel/") {
+		parts := strings.Split(inputText, "/reel/")
+		if len(parts) > 1 {
+			// "?" belgisi bo'lsa, undan oldingi qismni olish
+			idPart := parts[1]
+			if strings.Contains(idPart, "?") {
+				movieID = strings.Split(idPart, "?")[0]
+			} else {
+				movieID = idPart
+			}
+		}
+	} else {
+		movieID = inputText // Agar URL bo'lmasa, xabar matnini o'zini ishlatish
+	}
+
+	if movieID == "" {
+		msgResponse := tgbotapi.NewMessage(chatID, "To'g'ri Instagram reel URL kiriting.")
+		botInstance.Send(msgResponse)
+		return
+	}
+
+	err := storage.AddMovieIDToDatabase(db, movieID)
 	if err != nil {
 		log.Printf("Error adding movie ID to database: %v", err)
 		msgResponse := tgbotapi.NewMessage(chatID, "Kino ID sini qo'shishda xatolik yuz berdi.")
@@ -24,7 +51,7 @@ func HandleMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotA
 		return
 	}
 
-	state.MovieStates[chatID] = msg.Text // Store the movie ID in the state
+	state.MovieStates[chatID] = movieID // Faqat ID ni saqlash
 
 	msgResponse := tgbotapi.NewMessage(chatID, "Kino linkini kiriting:")
 	botInstance.Send(msgResponse)
@@ -65,7 +92,33 @@ func HandleMovieTitle(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.B
 func HandleSearchMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
 	chatID := msg.Chat.ID
 
-	movie, err := storage.GetMovieByID(db, msg.Text)
+	// Instagram URL dan ID ni ajratib olish
+	inputText := msg.Text
+	var movieID string
+
+	// URL da "/reel/" qismini qidirish
+	if strings.Contains(inputText, "/reel/") {
+		parts := strings.Split(inputText, "/reel/")
+		if len(parts) > 1 {
+			// "?" belgisi bo'lsa, undan oldingi qismni olish
+			idPart := parts[1]
+			if strings.Contains(idPart, "?") {
+				movieID = strings.Split(idPart, "?")[0]
+			} else {
+				movieID = idPart
+			}
+		}
+	} else {
+		movieID = inputText // Agar URL bo'lmasa, xabar matnini o'zini ishlatish
+	}
+
+	if movieID == "" {
+		msgResponse := tgbotapi.NewMessage(chatID, "To'g'ri Instagram reel URL yoki ID kiriting.")
+		botInstance.Send(msgResponse)
+		return
+	}
+
+	movie, err := storage.GetMovieByID(db, movieID)
 	if err != nil {
 		log.Printf("Error retrieving movie: %v", err)
 		msgResponse := tgbotapi.NewMessage(chatID, "Kino topilmadi.")
@@ -88,10 +141,33 @@ func HandleSearchMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotap
 
 func HandleDeleteMovie(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.BotAPI) {
 	chatID := msg.Chat.ID
-	movieID := msg.Text
+	inputText := msg.Text
 
 	if !storage.IsAdmin(int(chatID), db) {
 		msgResponse := tgbotapi.NewMessage(chatID, "Siz admin emassiz.")
+		botInstance.Send(msgResponse)
+		return
+	}
+
+	// Instagram URL dan ID ni ajratib olish
+	var movieID string
+	if strings.Contains(inputText, "/reel/") {
+		parts := strings.Split(inputText, "/reel/")
+		if len(parts) > 1 {
+			// "?" belgisi bo'lsa, undan oldingi qismni olish
+			idPart := parts[1]
+			if strings.Contains(idPart, "?") {
+				movieID = strings.Split(idPart, "?")[0]
+			} else {
+				movieID = idPart
+			}
+		}
+	} else {
+		movieID = inputText // Agar URL bo'lmasa, xabar matnini o'zini ishlatish
+	}
+
+	if movieID == "" {
+		msgResponse := tgbotapi.NewMessage(chatID, "To'g'ri Instagram reel URL yoki ID kiriting.")
 		botInstance.Send(msgResponse)
 		return
 	}
