@@ -98,26 +98,37 @@ func HandleSearchMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotap
 
 	// URL da "/reel/" qismini qidirish
 	if strings.Contains(inputText, "/reel/") {
+		// URL ni to'g'ri parse qilish uchun qismlarga ajratamiz
 		parts := strings.Split(inputText, "/reel/")
 		if len(parts) > 1 {
-			// "?" belgisi bo'lsa, undan oldingi qismni olish
+			// "/reel/" dan keyingi qismni olish
 			idPart := parts[1]
+			// Agar "?" belgisi bo'lsa, undan oldingi qismni olish
 			if strings.Contains(idPart, "?") {
 				movieID = strings.Split(idPart, "?")[0]
+			} else if strings.Contains(idPart, "/") {
+				// Agar URL oxirida "/" bo'lsa, undan oldingi qismni olish
+				movieID = strings.Split(idPart, "/")[0]
 			} else {
 				movieID = idPart
 			}
 		}
 	} else {
-		movieID = inputText // Agar URL bo'lmasa, xabar matnini o'zini ishlatish
+		// Agar URL bo'lmasa, kiritilgan matnni ID sifatida qabul qilish
+		movieID = inputText
 	}
 
+	// ID bo'sh bo'lsa, xato xabari
 	if movieID == "" {
 		msgResponse := tgbotapi.NewMessage(chatID, "To'g'ri Instagram reel URL yoki ID kiriting.")
 		botInstance.Send(msgResponse)
 		return
 	}
 
+	// Debugging uchun log qo'shamiz
+	log.Printf("Qidirilayotgan movieID: %s", movieID)
+
+	// ID bo'yicha kinoni qidirish
 	movie, err := storage.GetMovieByID(db, movieID)
 	if err != nil {
 		log.Printf("Error retrieving movie: %v", err)
@@ -126,6 +137,7 @@ func HandleSearchMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotap
 		return
 	}
 
+	// Video yuborish
 	video := tgbotapi.NewVideoShare(chatID, movie.Link)
 	caption := fmt.Sprintf("Mana siz izlagan kino.\n\n\n Bot tayyorlatish uchun: @BaxtiyorUrolov")
 	video.Caption = caption
@@ -152,12 +164,17 @@ func HandleDeleteMovie(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.
 	// Instagram URL dan ID ni ajratib olish
 	var movieID string
 	if strings.Contains(inputText, "/reel/") {
+		// URL ni to'g'ri parse qilish uchun qismlarga ajratamiz
 		parts := strings.Split(inputText, "/reel/")
 		if len(parts) > 1 {
-			// "?" belgisi bo'lsa, undan oldingi qismni olish
+			// "/reel/" dan keyingi qismni olish
 			idPart := parts[1]
+			// Agar "?" belgisi bo'lsa, undan oldingi qismni olish
 			if strings.Contains(idPart, "?") {
 				movieID = strings.Split(idPart, "?")[0]
+			} else if strings.Contains(idPart, "/") {
+				// Agar URL oxirida "/" bo'lsa, undan oldingi qismni olish
+				movieID = strings.Split(idPart, "/")[0]
 			} else {
 				movieID = idPart
 			}
