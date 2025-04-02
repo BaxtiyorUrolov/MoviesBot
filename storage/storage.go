@@ -20,7 +20,7 @@ func OpenDatabase(connStr string) (*sql.DB, error) {
 func AddUserToDatabase(db *sql.DB, userID int64) error {
 	query := `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`
 	_, err := db.Exec(query, userID)
-	log.Println(err)
+	log.Println("Userni bazaga qo'shishda xatolik:", err)
 	return err
 }
 

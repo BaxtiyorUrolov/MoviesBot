@@ -1,7 +1,7 @@
 package models
 
 type Movie struct {
-	ID          int64
-	Link        string
-	Title       string
+	ID    string
+	Link  string
+	Title string
 }

@@ -37,8 +37,7 @@ func HandleMovieLink(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.Bo
 	movieID := state.MovieStates[chatID] // Retrieve the movie ID from the state
 	err := storage.AddMovieLinkToDatabase(db, movieID, link)
 	if err != nil {
-		log.Printf("Error adding movie link to database: %v", err)
-		msgResponse := tgbotapi.NewMessage(chatID, "Kino linkini qo'shishda xatolik yuz berdi.")
+		msgResponse := tgbotapi.NewMessage(chatID, "Kino linkini qo'shishda xatolik yuz berdi: "+err.Error())
 		botInstance.Send(msgResponse)
 		return
 	}
@@ -54,8 +53,7 @@ func HandleMovieTitle(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.B
 	movieID := state.MovieStates[chatID] // Retrieve the movie ID from the state
 	err := storage.AddMovieTitleToDatabase(db, movieID, title)
 	if err != nil {
-		log.Printf("Error adding movie title to database: %v", err)
-		msgResponse := tgbotapi.NewMessage(chatID, "Kino nomini qo'shishda xatolik yuz berdi.")
+		msgResponse := tgbotapi.NewMessage(chatID, "Kino nomini qo'shishda xatolik yuz berdi: "+err.Error())
 		botInstance.Send(msgResponse)
 		return
 	}
@@ -82,7 +80,7 @@ func HandleSearchMovieID(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotap
 	_, err = botInstance.Send(video)
 	if err != nil {
 		log.Printf("Error sending video: %v", err)
-		msgResponse := tgbotapi.NewMessage(chatID, "Videoni yuborishda xatolik yuz berdi.")
+		msgResponse := tgbotapi.NewMessage(chatID, "Videoni yuborishda xatolik yuz berdi: "+err.Error())
 		botInstance.Send(msgResponse)
 		return
 	}
@@ -100,7 +98,7 @@ func HandleDeleteMovie(msg *tgbotapi.Message, db *sql.DB, botInstance *tgbotapi.
 
 	err := storage.DeleteMovie(db, movieID)
 	if err != nil {
-		msgResponse := tgbotapi.NewMessage(chatID, "Kino o'chirishda xatolik yuz berdi.")
+		msgResponse := tgbotapi.NewMessage(chatID, "Kino o'chirishda xatolik yuz berdi: "+err.Error())
 		botInstance.Send(msgResponse)
 		log.Printf("Error deleting movie: %v", err)
 		return

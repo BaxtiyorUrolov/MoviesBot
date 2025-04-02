@@ -22,7 +22,9 @@ func main() {
 	}
 	defer db.Close()
 
-	botToken := "7022304427:AAHlYfBrdysAYZNzrFAyZ1laDzCD7I-N_Hk"
+	//botToken := "7022304427:AAHlYfBrdysAYZNzrFAyZ1laDzCD7I-N_Hk"
+
+	botToken := "6902655696:AAHnk8V-ly7Q3W57QFNvOlatOTAZrgE4juA"
 	botInstance, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		log.Fatal(err)
